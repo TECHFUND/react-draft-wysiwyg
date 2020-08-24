@@ -2206,6 +2206,7 @@ ol {
 }
 .rdw-image-left {
   display: flex;
+  justify-content: flex-start;
 }
 .rdw-image-right {
   display: flex;
