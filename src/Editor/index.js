@@ -8,7 +8,10 @@ import {
   convertFromRaw,
   CompositeDecorator,
   getDefaultKeyBinding,
+  ContentState,
 } from 'draft-js';
+import draftToHtml from 'draftjs-to-html';
+import htmlToDraft from 'html-to-draftjs';
 import {
   changeDepth,
   handleNewLine,
@@ -61,6 +64,21 @@ class WysiwygEditor extends Component {
     const editorState = this.createEditorState(this.compositeDecorator);
     extractInlineStyle(editorState);
     this.state = {
+      lastStable: {
+        "entityMap": {
+          "0": {
+            "type": "IMAGE",
+            "mutability": "MUTABLE",
+            "data": {
+              "src": "https://upload.wikimedia.org/wikipedia/commons/f/f3/ToxLogo.png",
+              "height": "0px",
+              "width": "0px",
+              "alt" : "left"
+            }
+          }
+        }
+      },
+      entityShouldExist: false,
       editorState,
       editorFocused: false,
       toolbar,
@@ -176,21 +194,72 @@ class WysiwygEditor extends Component {
 
   onChange = editorState => {
     const { readOnly, onEditorStateChange } = this.props;
-    if (
-      !readOnly &&
-      !(
-        getSelectedBlocksType(editorState) === 'atomic' &&
-        editorState.getSelection().isCollapsed
-      )
-    ) {
-      if (onEditorStateChange) {
-        onEditorStateChange(editorState, this.props.wrapperId);
-      }
-      if (!hasProperty(this.props, 'editorState')) {
-        this.setState({ editorState }, this.afterChange(editorState));
-      } else {
-        this.afterChange(editorState);
-      }
+    let currentContent = convertToRaw(editorState.getCurrentContent())
+
+    if(Object.keys(currentContent.entityMap).length!==0 || this.state.entityShouldExist) {
+      if (
+        !readOnly &&
+        !(
+          getSelectedBlocksType(editorState) === 'atomic' &&
+          editorState.getSelection().isCollapsed
+        )
+      ) {
+          if (onEditorStateChange) {
+            onEditorStateChange(editorState, this.props.wrapperId);
+          }
+          if (!hasProperty(this.props, 'editorState')) {
+            if(Object.keys(currentContent.entityMap).length===0 && this.state.entityShouldExist){
+              let newStable = convertToRaw(editorState.getCurrentContent())
+              this.setState({
+                lastStable: newStable,
+                entityShouldExist: true
+              }, ()=> {
+                const json = convertFromRaw(this.state.lastStable);
+                let markup = draftToHtml(convertToRaw(json));
+                const contentBlock = htmlToDraft(markup);
+                const contentState = ContentState.createFromBlockArray(contentBlock.contentBlocks);
+                EditorState.createWithContent(contentState);
+              })
+            } else {
+              if(Object.keys(currentContent.entityMap).length!==0) {
+                this.setState({
+                  entityShouldExist: true
+                })
+              }
+              this.setState({ editorState }, this.afterChange(editorState));
+            }
+          } else {
+            this.afterChange(editorState);
+          }
+        }
+    } else {
+      if (
+        !readOnly &&
+        !(
+          getSelectedBlocksType(editorState) === 'atomic' &&
+          editorState.getSelection().isCollapsed
+        )
+      ) {
+          if (onEditorStateChange) {
+            onEditorStateChange(editorState, this.props.wrapperId);
+          }
+          if (!hasProperty(this.props, 'editorState')) {
+          
+            if(Object.keys(currentContent.entityMap).length===0 && this.state.entityShouldExist){
+              let newStable = convertToRaw(editorState.getCurrentContent())
+              newStable["entityMap"] = this.state.lastStable["entityMap"]
+              this.setState({
+                lastStable: newStable
+              }, ()=> {
+                this.setState({ editorState : editorStatecustom }, this.afterChange(editorStatecustom));
+              })
+            } else {
+              this.setState({ editorState }, this.afterChange(editorState));
+            }
+          } else {
+            this.afterChange(editorState);
+          }
+        }
     }
   };
 

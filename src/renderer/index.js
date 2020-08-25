@@ -8,17 +8,33 @@ const getBlockRenderFunc = (config, customBlockRenderer) => (block) => {
   }
   if (block.getType() === 'atomic') {
     const contentState = config.getEditorState().getCurrentContent();
-    const entity = contentState.getEntity(block.getEntityAt(0));
-    if (entity && entity.type === 'IMAGE') {
+    if(contentState && contentState!==null){
+      const entity = contentState.getEntity(block.getEntityAt(0));
+      if (entity && entity.type === 'IMAGE') {
+        let imageComponent = null
+        try {
+          imageComponent = getImageComponent(config)
+          return {
+            component: imageComponent,
+            editable: false,
+          };
+        } catch(e) {
+          return {
+            component: null,
+            editable: false
+          }
+        }
+      } else if (entity && entity.type === 'EMBEDDED_LINK') {
+        return {
+          component: Embedded,
+          editable: false,
+        };
+      }
+    } else {
       return {
-        component: getImageComponent(config),
-        editable: false,
-      };
-    } else if (entity && entity.type === 'EMBEDDED_LINK') {
-      return {
-        component: Embedded,
-        editable: false,
-      };
+        component: null,
+        editable: false
+      }
     }
   }
   return undefined;

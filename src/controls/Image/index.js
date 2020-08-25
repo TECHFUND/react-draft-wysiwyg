@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import { AtomicBlockUtils } from 'draft-js';
+import { AtomicBlockUtils, Modifier, EditorState } from 'draft-js';
 
 import LayoutComponent from './Component';
 
@@ -50,6 +50,18 @@ class ImageControl extends Component {
     this.signalExpanded = false;
   };
 
+  addTextBlock = textContent => {
+    const { editorState, onChange } = this.props;
+    const contentState = Modifier.replaceText(
+      editorState.getCurrentContent(),
+      editorState.getSelection(),
+      textContent,
+      editorState.getCurrentInlineStyle()
+    );
+    onChange(EditorState.push(editorState, contentState, 'insert-characters'));
+    this.doCollapse();
+  };
+
   addImage = (src, height, width, alt) => {
     const { editorState, onChange, config } = this.props;
     const entityData = { src, height, width };
@@ -67,6 +79,9 @@ class ImageControl extends Component {
     );
     onChange(newEditorState);
     this.doCollapse();
+    setTimeout(()=>{
+      this.addTextBlock("  ")
+    }, 100)
   };
 
   render() {
