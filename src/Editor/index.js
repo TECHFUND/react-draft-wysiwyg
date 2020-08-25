@@ -64,6 +64,7 @@ class WysiwygEditor extends Component {
     const editorState = this.createEditorState(this.compositeDecorator);
     extractInlineStyle(editorState);
     this.state = {
+      goingBack: false,
       lastStable: {
         "entityMap": {
           "0": {
@@ -155,6 +156,16 @@ class WysiwygEditor extends Component {
   };
 
   keyBindingFn = event => {
+    if(event.key === 'Backspace') {
+      this.setState({
+        goingBack: true
+      })
+    } else {
+      this.setState({
+        goingBack: false
+      })
+    }
+    
     if (event.key === 'Tab') {
       const { onTab } = this.props;
       if (!onTab || !onTab(event)) {
@@ -251,7 +262,7 @@ class WysiwygEditor extends Component {
               this.setState({
                 lastStable: newStable
               }, ()=> {
-                this.setState({ editorState : editorStatecustom }, this.afterChange(editorStatecustom));
+                this.setState({ editorState : this.state.lastStable }, this.afterChange(this.state.lastStable));
               })
             } else {
               this.setState({ editorState }, this.afterChange(editorState));
